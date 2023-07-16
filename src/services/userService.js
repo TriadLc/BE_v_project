@@ -9,7 +9,7 @@ let getDeitalUserByIdService = (inputId) => {
       if (!inputId) {
         resolve({
           errCode: 1,
-          errMessage: "Missing required parameter!",
+          errMessage: "Missing required parameters!",
         });
       } else {
         let data = await db.User.findOne({
@@ -36,12 +36,12 @@ let getAllListUserService = (userId) => {
   return new Promise(async (resolve, reject) => {
     try {
       let listUser = await db.User.findAll({
-        where: {
-          role: "1",
-        },
-        //order: [["createAt", "DESC"]],
+        // where: {
+        //   role: "R1", "R2", "R3",
+        // },
+        // order: [["createdAt", "DESC"]],
         attributes: {
-          exclude: ["password"],
+          exclude: ["password", "avatar"],
         },
       });
       resolve({
@@ -85,24 +85,36 @@ let checkUserExistEmail = (userEmail) => {
 let addNewUserService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let check = await checkUserExistEmail(data.email);
-      if (check === true) {
+      if (!data.email) {
         resolve({
           errCode: 1,
-          errMessage: `This email is already exsit!`,
+          errMessage: `Missing required parameters!`,
         });
       } else {
-        let hashPassWordFromBcrypt = await hashUserPassword(data.password);
-        await db.User.create({
-          email: data.email,
-          password: hashPassWordFromBcrypt,
-          name: data.name,
-          role: data.role,
-        });
-        resolve({
-          errCode: 0,
-          errMessage: `Everything's OK now~`,
-        });
+        let check = await checkUserExistEmail(data.email);
+        if (check === true) {
+          resolve({
+            errCode: 3,
+            errMessage: `This email is already exsit!`,
+          });
+        } else {
+          let hashPassWordFromBcrypt = await hashUserPassword(data.password);
+          await db.User.create({
+            email: data.email,
+            password: hashPassWordFromBcrypt,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            address: data.address,
+            telephone: data.telephone,
+            roleId: data.roleId,
+            gender: data.gender,
+            avatar: data.dataImage,
+          });
+          resolve({
+            errCode: 0,
+            errMessage: `Everything's OK now~`,
+          });
+        }
       }
     } catch (e) {
       reject(e);
@@ -113,10 +125,10 @@ let addNewUserService = (data) => {
 let editUserByIdService = (data) => {
   return new Promise(async (resolve, reject) => {
     try {
-      if (!data.id || !data.role || !data.email) {
+      if (!data.id || !data.roleId || !data.email) {
         resolve({
-          errCode: 2,
-          errMessage: `Missing required parameters~`,
+          errCode: 1,
+          errMessage: `Missing required parameters!`,
         });
       }
       let user = await db.User.findOne({
@@ -125,19 +137,22 @@ let editUserByIdService = (data) => {
       });
       if (user) {
         user.email = data.email;
-        user.name = data.name;
-        user.role = data.role;
-        user.phone = data.phone;
+        user.firstName = data.firstName;
+        user.lastName = data.lastName;
+        user.address = data.address;
+        user.telephone = data.telephone;
+        user.gender = data.gender;
+        user.roleId = data.roleId;
 
-        // if (data.avatar) {
-        //   user.image = data.avatar;
-        // }
+        if (data.dataImage) {
+          user.avatar = data.dataImage;
+        }
 
         await user.save();
 
         resolve({
           errCode: 0,
-          errMessage: `Update the user succeeds~`,
+          errMessage: `Update data succeed~`,
         });
       } else {
         resolve({
@@ -169,7 +184,7 @@ let deleteUserByIdService = (userId) => {
       }
       resolve({
         errCode: 0,
-        message: `The user is deleted~`,
+        errMessage: `Deleted data successfully~`,
       });
     } catch (e) {
       reject(e);
